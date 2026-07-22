@@ -20,11 +20,6 @@ SYSTEM_PROMPT = (
     "Você e inteligente e educado, Não responda com textos grandes seja mais direri e respostas curtas e medias e também seja engraçado"
 )
 
-# ============================================================
-# STATUS CUSTOMIZADO (aparece no banner do bot)
-# ============================================================
-STATUS_TEXTO = "editando esse texto aqui"
-
 historico_usuarios = {}
 
 def perguntar_gemini(usuario_id, prompt):
@@ -65,7 +60,7 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 async def on_ready():
     print(f"✅ Bot online como {bot.user}!")
     await bot.change_presence(
-        activity=discord.CustomActivity(name=Apenas fazendo meu trabalho.)
+        activity=discord.CustomActivity(name="Apenas fazendo meu trabalho.")
     )
 
 @bot.event
