@@ -1,0 +1,169 @@
+import discord
+from discord.ext import commands
+import google.genai as genai
+from google.genai import types
+import os
+import asyncio
+from http.server import HTTPServer, BaseHTTPRequestHandler
+import threading
+
+# --- TOKENS ---
+DISCORD_TOKEN = os.environ.get("DISCORD_TOKEN")
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
+
+# Configura o Gemini
+client_ai = genai.Client(api_key=GEMINI_API_KEY)
+
+SYSTEM_PROMPT = (
+    "Você e o Astolfo um bot para o servidor do gabriel, o nome do servidor e Comunidade dos Amigos."
+    "O seu criador e o moderador Gamer_ali, e o do servidor e o gabriel."
+    "Você e inteligente e educado, Não responda com textos grandes seja mais direri e respostas curtas e medias e também seja engraçado"
+)
+
+# ============================================================
+# STATUS CUSTOMIZADO (aparece no banner do bot)
+# ============================================================
+STATUS_TEXTO = "editando esse texto aqui"
+
+historico_usuarios = {}
+
+def perguntar_gemini(usuario_id, prompt):
+    if usuario_id not in historico_usuarios:
+        historico_usuarios[usuario_id] = []
+
+    historico_usuarios[usuario_id].append({
+        "role": "user",
+        "parts": [{"text": prompt}]
+    })
+
+    response = client_ai.models.generate_content(
+        model="gemini-3.1-flash-lite",
+        contents=historico_usuarios[usuario_id],
+        config=types.GenerateContentConfig(
+            system_instruction=SYSTEM_PROMPT,
+            temperature=1,
+            max_output_tokens=2048,
+        )
+    )
+
+    resposta_texto = response.text
+
+    historico_usuarios[usuario_id].append({
+        "role": "model",
+        "parts": [{"text": resposta_texto}]
+    })
+
+    return resposta_texto
+
+intents = discord.Intents.default()
+intents.message_content = True
+intents.members = True
+intents.voice_states = True
+bot = commands.Bot(command_prefix="!", intents=intents)
+
+@bot.event
+async def on_ready():
+    print(f"✅ Bot online como {bot.user}!")
+    await bot.change_presence(
+        activity=discord.CustomActivity(name=Apenas fazendo meu trabalho.)
+    )
+
+@bot.event
+async def on_message(message):
+    if message.author == bot.user:
+        return
+
+    mencionou = bot.user.mentioned_in(message)
+
+    respondeu_ao_bot = False
+    if message.reference is not None:
+        try:
+            ref = message.reference.resolved
+            if ref is None:
+                ref = await message.channel.fetch_message(message.reference.message_id)
+            if ref is not None and ref.author == bot.user:
+                respondeu_ao_bot = True
+        except:
+            pass
+
+    if not (mencionou or respondeu_ao_bot):
+        await bot.process_commands(message)
+        return
+
+    prompt = message.content
+    for mention in message.mentions:
+        if mention != bot.user:
+            prompt = prompt.replace(mention.mention, f"@{mention.display_name}")
+    prompt = prompt.replace(bot.user.mention, "").strip()
+
+    if not prompt:
+        prompt = "Olá!"
+
+    prompt_lower = prompt.lower()
+
+    # --- Lógica de entrar na call ---
+    palavras_entrar = ["entrar na call", "vem call", "entrar call", "entra na call", "entra call"]
+    palavras_sair = ["sai da call", "sair da call", "sai da voz", "pode sair", "vaza", "pode vazar", "saia"]
+
+    if any(p in prompt_lower for p in palavras_entrar):
+        canal_voz = message.author.voice.channel if message.author.voice else None
+        if canal_voz is None:
+            await message.reply("Você precisa entrar em um canal de voz primeiro para eu poder ir.")
+        else:
+            try:
+                if message.guild.voice_client is not None:
+                    await message.guild.voice_client.disconnect(force=True)
+                    await asyncio.sleep(1)
+                await canal_voz.connect(self_deaf=True)
+                await message.reply(f"**Entrei na call {canal_voz.name}**")
+            except Exception as e:
+                print(f"Erro ao entrar na call: {e}")
+                await message.reply(f"Erro ao entrar na call: {e}")
+        return
+
+    # --- Lógica de sair da call ---
+    if any(p in prompt_lower for p in palavras_sair):
+        if message.guild.voice_client is not None:
+            await message.guild.voice_client.disconnect(force=True)
+            await message.reply("Saí da call.")
+        else:
+            await message.reply("Não estou em nenhum canal de voz.")
+        return
+
+    # Passa o nome de quem tá falando pro Gemini
+    nome_autor = message.author.display_name
+    prompt_com_contexto = f"[Quem está falando comigo agora: {nome_autor}]\n{prompt}"
+
+    try:
+        async with message.channel.typing():
+            resposta = await asyncio.to_thread(
+                perguntar_gemini, message.author.id, prompt_com_contexto
+            )
+        await message.reply(resposta)
+    except Exception as e:
+        print(f"❌ Erro: {e}")
+        await message.reply("Ocorreu um erro, tenta de novo!")
+
+    await bot.process_commands(message)
+
+# Servidor HTTP simples pra satisfazer o Render
+class Handler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        self.send_response(200)
+        self.send_header("Content-Type", "text/plain")
+        self.end_headers()
+        self.wfile.write(b"Bot rodando!")
+    def do_HEAD(self):
+        self.send_response(200)
+        self.send_header("Content-Type", "text/plain")
+        self.end_headers()
+    def log_message(self, format, *args):
+        pass
+
+def rodar_servidor():
+    porta = int(os.environ.get("PORT", 10000))
+    HTTPServer(("0.0.0.0", porta), Handler).serve_forever()
+
+threading.Thread(target=rodar_servidor, daemon=True).start()
+
+bot.run(DISCORD_TOKEN)
