@@ -4,12 +4,14 @@ import google.genai as genai
 from google.genai import types
 import os
 import asyncio
+import random
 from http.server import HTTPServer, BaseHTTPRequestHandler
 import threading
 
 # --- TOKENS ---
 DISCORD_TOKEN = os.environ.get("DISCORD_TOKEN")
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
+CARGO_REVIVER_ID = int(os.environ.get("CARGO_REVIVER_ID", 0))
 
 # Configura o Gemini
 client_ai = genai.Client(api_key=GEMINI_API_KEY)
@@ -123,6 +125,35 @@ async def on_message(message):
             await message.reply("Saí da call.")
         else:
             await message.reply("Não estou em nenhum canal de voz.")
+        return
+
+    # --- Lógica de reviver/ativar o chat (só admin) ---
+    palavras_reviver = [
+        "reviver o chat", "reviver chat", "ativa o chat", "ativar o chat",
+        "bora ativar", "chat morreu", "manda vida pro chat", "acorda o chat",
+        "bora reviver", "revive o chat"
+    ]
+
+    mensagens_reviver = [
+        "Tá bem, {cargo}! Olha o chat aí, vamos ativar essa conversa! 🔥",
+        "{cargo}, chegou a hora! Bora dar vida pro chat!",
+        "Ei {cargo}, o pessoal quer papo! Aparece aí!",
+        "{cargo} sendo chamado(a)! Vamos animar esse chat!",
+    ]
+
+    if any(p in prompt_lower for p in palavras_reviver):
+        if not message.author.guild_permissions.administrator:
+            await message.reply("Só administradores podem usar esse comando.")
+            return
+        if CARGO_REVIVER_ID:
+            cargo = message.guild.get_role(CARGO_REVIVER_ID)
+            if cargo:
+                msg = random.choice(mensagens_reviver).format(cargo=cargo.mention)
+                await message.channel.send(msg)
+            else:
+                await message.reply("Não encontrei o cargo configurado.")
+        else:
+            await message.reply("Nenhum cargo configurado pra isso ainda.")
         return
 
     # Passa o nome de quem tá falando pro Gemini
