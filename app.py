@@ -136,10 +136,10 @@ async def on_message(message):
     ]
 
     mensagens_reviver = [
-        "Tá bem, {cargo}! Olha o chat aí, vamos ativar essa conversa! 🔥",
-        "{cargo}, chegou a hora! Bora dar vida pro chat!",
-        "Ei {cargo}, o pessoal quer papo! Aparece aí!",
-        "{cargo} sendo chamado(a)! Vamos animar esse chat!",
+        "Eai Chat {cargo}",
+        "{cargo} Olá chat",
+        "Vamo acorda esse chat {cargo}",
+        "{cargo} Eai chat, estão bem?",
     ]
 
     if any(p in prompt_lower for p in palavras_reviver):
