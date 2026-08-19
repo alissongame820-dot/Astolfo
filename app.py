@@ -12,6 +12,7 @@ import threading
 DISCORD_TOKEN = os.environ.get("DISCORD_TOKEN")
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 CARGO_REVIVER_ID = int(os.environ.get("CARGO_REVIVER_ID", 0))
+CANAL_REVIVER_ID = int(os.environ.get("CANAL_REVIVER_ID", 0))
 
 # Configura o Gemini
 client_ai = genai.Client(api_key=GEMINI_API_KEY)
@@ -127,7 +128,7 @@ async def on_message(message):
             await message.reply("Não estou em nenhum canal de voz.")
         return
 
-    # --- Lógica de reviver/ativar o chat (só admin) ---
+    # --- Lógica de reviver/ativar o chat (só admin, manda em canal específico) ---
     palavras_reviver = [
         "reviver o chat", "reviver chat", "ativa o chat", "ativar o chat",
         "bora ativar", "chat morreu", "manda vida pro chat", "acorda o chat",
@@ -145,15 +146,18 @@ async def on_message(message):
         if not message.author.guild_permissions.administrator:
             await message.reply("Só administradores podem usar esse comando.")
             return
-        if CARGO_REVIVER_ID:
+        if CARGO_REVIVER_ID and CANAL_REVIVER_ID:
             cargo = message.guild.get_role(CARGO_REVIVER_ID)
-            if cargo:
+            canal = message.guild.get_channel(CANAL_REVIVER_ID)
+            if cargo and canal:
                 msg = random.choice(mensagens_reviver).format(cargo=cargo.mention)
-                await message.channel.send(msg)
+                await canal.send(msg)
+                if canal != message.channel:
+                    await message.reply(f"Mensagem enviada em {canal.mention}!")
             else:
-                await message.reply("Não encontrei o cargo configurado.")
+                await message.reply("Cargo ou canal não encontrado.")
         else:
-            await message.reply("Nenhum cargo configurado pra isso ainda.")
+            await message.reply("Cargo ou canal não configurados ainda.")
         return
 
     # Passa o nome de quem tá falando pro Gemini
