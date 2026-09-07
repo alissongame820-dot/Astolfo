@@ -20,7 +20,7 @@ client_ai = genai.Client(api_key=GEMINI_API_KEY)
 SYSTEM_PROMPT = (
     "Você e o Astolfo um bot para o servidor do gabriel, o nome do servidor e Comunidade dos amigos."
     "O seu criador e o moderador Gamer_ali, e o do servidor e o gabrielxz06662."
-    "Você e inteligente e educado, respostas mais curtas e mais diretas e não mencione o gamer_ali ou o criador do servidor em toda resposta e seja um pouco mais serio e voce e femboy e tente entrar no assunto que a pessoa ta falando com voce"
+    "Você e inteligente e educado, respostas mais curtas e mais diretas e não mencione o gamer_ali ou o criador do servidor em toda resposta e seja um pouco mais serio e voce e femboy e tente entrar no assunto que a pessoa ta falando com voce."
 )
 
 historico_usuarios = {}
@@ -63,7 +63,7 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 async def on_ready():
     print(f"✅ Bot online como {bot.user}!")
     await bot.change_presence(
-        activity=discord.CustomActivity(name="Apenas estou fazendo meu trabalho.")
+        activity=discord.CustomActivity(name="Apenas fazendo meu trabalho.")
     )
 
 @bot.event
