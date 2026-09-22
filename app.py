@@ -5,6 +5,8 @@ from google.genai import types
 import os
 import asyncio
 import random
+from datetime import datetime
+from zoneinfo import ZoneInfo
 from http.server import HTTPServer, BaseHTTPRequestHandler
 import threading
 
@@ -13,6 +15,7 @@ DISCORD_TOKEN = os.environ.get("DISCORD_TOKEN")
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 CARGO_REVIVER_ID = int(os.environ.get("CARGO_REVIVER_ID", 0))
 CANAL_REVIVER_ID = int(os.environ.get("CANAL_REVIVER_ID", 0))
+CANAL_LOG_SAIDA_ID = int(os.environ.get("CANAL_LOG_SAIDA_ID", 0))
 
 # Configura o Gemini
 client_ai = genai.Client(api_key=GEMINI_API_KEY)
@@ -65,6 +68,15 @@ async def on_ready():
     await bot.change_presence(
         activity=discord.CustomActivity(name="Apenas fazendo meu trabalho.")
     )
+
+@bot.event
+async def on_member_remove(member):
+    if not CANAL_LOG_SAIDA_ID:
+        return
+    canal = member.guild.get_channel(CANAL_LOG_SAIDA_ID)
+    if canal:
+        agora = datetime.now(ZoneInfo("America/Sao_Paulo")).strftime("%d/%m/%Y %H:%M:%S")
+        await canal.send(f"**O usuário {member.mention} saiu do servidor!** **__Data e hora:__** {agora}")
 
 @bot.event
 async def on_message(message):
