@@ -76,7 +76,7 @@ async def on_member_remove(member):
     canal = member.guild.get_channel(CANAL_LOG_SAIDA_ID)
     if canal:
         agora = datetime.now(ZoneInfo("America/Sao_Paulo")).strftime("%d/%m/%Y %H:%M:%S")
-        await canal.send(f"**O meliante 'member.name' saiu do servidor!** **__Data e hora:__** {agora}")
+        await canal.send(f"**O meliante '{member.name}' saiu do servidor!** **__Data e hora:__** {agora}")
 
 @bot.event
 async def on_message(message):
